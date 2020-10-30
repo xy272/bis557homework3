@@ -8,7 +8,3 @@ penguinsi <- penguins %>%
   missForest() %>%
   `$`(ximp)%>%
   as_tibble()
-
-use_data(penguinsi)
-
-load("data/penguinsi.rda")

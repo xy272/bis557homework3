@@ -133,13 +133,11 @@ penguinsi <- penguins %>%
   missForest() %>%
   `$`(ximp)%>%
   as_tibble()
-
-use_data(penguinsi, overwrite = TRUE)
-
-load("data/penguinsi.rda")
 ```
 
 ```{r}
+library(usethis)
+library(testthat)
   K = 3
   P = 6
 
