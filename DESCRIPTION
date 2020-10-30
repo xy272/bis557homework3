@@ -1,0 +1,25 @@
+Package: bis557homework3
+Title: This package is used for the bis557 homework 3
+Version: 0.0.1
+Authors@R: 
+    person(given = "Xining",
+           family = "Yuan",
+           role = c("aut", "cre"),
+           email = "xining.yuan@yale.edu",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: This package is used to complete homework 3
+License: LGPL (>= 2.1)
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat,
+    dplyr,
+    plyr,
+    ramify
+VignetteBuilder: knitr
+Depends: 
+    R (>= 2.10)

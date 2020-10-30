@@ -1,0 +1,93 @@
+---
+title: "Homework 3"
+author: "Xining Yuan"
+date: "10/30/2020"
+output: pdf_document
+---
+
+```{r setup}
+library(bis557homework3)
+```
+
+## 1. This is the first question of the homework 3
+Suppose $X = U\Sigma V^T$, then We have that $X^TX=V \Sigma^2 V^T$
+
+Suppose $\Sigma^2=I$, then $X^TX=VIV^T$
+
+We also know that $X^TDX=V\Sigma^TU^TDU\Sigma V^T$, i.e. $X^TDX=VU^TD(VU)^T$
+
+In this condition, we know that whether the condition number is good or not, it depends on $D$.
+
+Therefore, let $X=\left[\begin{array}{cc}0.96&-0.28\\0.28&0.96\end{array}\right]$ and $\beta=\left[\begin{array}{c}280\\950\end{array}\right]$.
+
+Based on $\beta$ and $X$ we have above, we can get that $p_1=\frac{1}{2}$ and $p_2=0.999$.
+
+Therefore, $D=\left[\begin{array}{cc}p_1(1-p_1)&0\\0&p_2(1-p_2)\end{array}\right]=\left[\begin{array}{cc}0.25&0\\0&0.000999\end{array}\right]$
+
+Based on all matrices we have, we can calculate condition numbers of $X^TX$ and $X^TDX$.
+
+The condition number of $X^TX$ is $1$, which is good.
+
+The condition number of $X^TDX$ is $354.164$, which is bad.
+
+## 2. This is the second question of the homework 3
+```{r}
+my_glm_gd <-
+  function(X, y, mu_fun, gamma, maxit=25, tol=1e-10) {
+    beta <- rep(0,ncol(X))
+    for(j in seq_len(maxit)) {
+      b_old <- beta
+      eta <- X %*% beta
+      mu <- mu_fun(eta)
+      delta <- t(X) %*% (y - mu)
+      beta <- beta + gamma * delta
+    }
+    beta
+  }
+```
+```{r}
+my_glm_nag <-
+  function(X, y, mu_fun, gamma, maxit=25, tol=1e-10) {
+    alpha <- 0.5
+    beta <- rep(0,ncol(X))
+    v <- rep(0,ncol(X))
+    for(j in seq_len(maxit)) {
+      b_old <- beta
+      eta <- X %*% (beta - alpha * v)
+      mu <- mu_fun(eta)
+      delta <- t(X) %*% (y - mu)
+      v <- alpha * v - gamma * delta
+      beta <- beta - v
+    }
+    beta
+  }
+```
+```{r}
+n <- 5000; p <- 3
+beta <- c(-1, 0.2, 0.1)
+X <- cbind(1, matrix(rnorm(n * (p- 1)), ncol = p - 1))
+eta <- X %*% beta
+lambda <- exp(eta)
+y <- rpois(n, lambda = lambda)
+beta_hat_gd <- my_glm_gd(X, y, mu_fun = function(eta) exp(eta), gamma=0.0005, maxit=200)
+beta_hat_nag <- my_glm_nag(X, y, mu_fun = function(eta) exp(eta), gamma=0.0005)
+beta_glm <- coef(glm(y ~ X[,-1], family = "poisson"))
+cbind(beta, beta_hat_gd, beta_hat_nag , as.numeric(beta_glm))
+```
+### Description:
+For the GLM maximum likelihood, I use $L(y)=\sum\limits_{i=1}^nX_i^t\beta\cdot y_i-A(X_i^t\beta)+\log(h(y_i))$
+
+We want to get that $\hat{\beta}=\arg\max L(y,\beta)$. Therefore, we use $\nabla L(\beta)=X^T(y-\mu(X^T\beta))$, where $\mu=Ey_i$
+
+According to the gradient descent, we have that $\beta_{i+1}=\beta_i+\gamma\nabla L(\beta)$.
+
+Based on those formulas, we can build up the my_glm_gd function shown above.
+
+Then I choose to use Nesterov as a standard adaptive of step size.
+
+We have $v_t=\alpha v_{t-1}-\gamma\nabla_{\theta}L(\beta-\alpha v_{t-1})$ and $\beta=\beta-v_t$
+
+Then according to this formula, we build up the my_glm_nag function shown above.
+
+### Explanation:
+I build up the random data putting in to my_glm_gd function and my_glm_nag function to do the comparison. The comparison among beta, beta_hat_gd and beta_hat_nag, we can get they are similar. Therefore, it means that both of methods work.
