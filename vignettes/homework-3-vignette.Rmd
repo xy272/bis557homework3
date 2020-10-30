@@ -100,3 +100,95 @@ Then according to this formula, we build up the my_glm_nag function shown above.
 
 ### Explanation:
 I build up the random data putting in to my_glm_gd function and my_glm_nag function to do the comparison. The comparison among beta, beta_hat_gd and beta_hat_nag, we can get they are similar. Therefore, it means that both of methods work.
+
+
+## 3. This is the third question of the homework 3
+```{r}
+my_glm_nr_logistic <-
+  function(X, y, maxit=25L, tol=1e-10)
+  {
+    beta <- rep(0,ncol(X))
+    for(j in seq(1L, maxit)) {
+      b_old <- beta
+      p <- 1 / (1 + exp(- X %*% beta))
+      W <- as.numeric(p * (1 - p))
+      XtX <- crossprod(X, diag(W) %*% X)
+      score <- t(X) %*% (y - p)
+      delta <- solve(XtX, score)
+      beta <- beta + delta
+      if(sqrt(crossprod(beta - b_old)) < tol) break
+    }
+    beta
+  }
+```
+
+```{r}
+library(palmerpenguins)
+library(usethis)
+library(missForest)
+library(dplyr)
+
+penguinsi <- penguins %>%
+  as.data.frame()%>%
+  missForest() %>%
+  `$`(ximp)%>%
+  as_tibble()
+
+use_data(penguinsi, overwrite = TRUE)
+
+load("data/penguinsi.rda")
+```
+
+```{r}
+  K = 3
+  P = 6
+
+  library(dplyr)
+  library(plyr)
+  library(ramify)
+  d <- penguinsi %>%
+      select(species, island, bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g, sex) %>%
+      mutate(sex = if_else(sex == "male", 1, 0))
+  d$species <- revalue(d$species, c(Adelie=0, Gentoo=1, Chinstrap=2))
+  d$island <- revalue(d$island, c(Torgersen=0, Biscoe=1, Dream=2))
+
+  n_train <- 300
+  n_test <- 44
+  X_train <- d[1:n_train,2:7]
+  y_train <- d[1:n_train,1]
+  X_test <- d[(n_train+1):344,2:7]
+  y_test <- d[(n_train+1):344,1]
+
+  X_train <- data.matrix(X_train)
+  y_train <- data.matrix(y_train)
+  X_test <- data.matrix(X_test)
+  y_test <- data.matrix(y_test)
+  # coefficients of all K models
+  beta_hat <- matrix(rep(0, len=K*(P+1)), nrow=P+1)
+  # training coefficients with training data
+  X_k <- cbind(1, X_train)
+  for (k in seq(1L, K))
+  {
+    y_k <- as.numeric(y_train == k)
+    beta_tmp <- my_glm_nr_logistic(X_k, y_k)
+    beta_hat[1:(P+1),k] <- beta_tmp[1:(P+1)]
+  }
+  # predicting
+  prob <- matrix(rep(0, len=n_test*K), nrow=n_test)
+  X_k <- cbind(1, X_test)
+  for (k in seq(1L, K))
+  {
+    prob_tmp <- 1 / ( 1 + exp(-X_k %*% beta_hat[1:(P+1),k]))
+    prob[1:n_test,k] <- prob_tmp[1:n_test]
+  }
+  y_pred <- argmax(prob, rows = TRUE)
+
+  bias <- abs(y_test-y_pred)
+  bias1 <- sum(bias)
+
+
+  expect_lt(bias1, 5)
+```
+
+### Description:
+Use one-vs-all approach fits K binary models, one for each class. In each time, we set the class $k$ as one. The rest classes are coded as zero. Then we train the regression model and get the coefficients $\beta_k$. During the testing, we run the prediction models $k$ times. Each time, we predict with $\beta_k$ and get the probability that testing sample belongs to class $k$. For the final result, we find the class that the testing sample has the largest probability.
